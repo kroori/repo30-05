@@ -1,39 +1,24 @@
-pipeline
+pipeline  
 {
-agent any
-tools{
-maven 'maven'
-}
-stages{
-stage('validate'){
-steps{
-sh "mvn validate"
-}
-}
-stage('compile'){
-steps{
-sh "mvn compile"
-}
-}
-stage('test'){
-steps{
-sh "mvn test"
-}
-}
-stage('package')
-stage{
-sh "mvn package"
-}
-}
-stage('verify'){
-steps{
-sh "mvn verify"
-}
-}
-stage ('install'){
-steps{
-sh "mvn install"
-}
-}
-}
+    agent any
+    tools {
+        maven 'maven'
+    }
+    stages {
+        stage('git clone') {
+            steps {
+                git 'https://github.com/ajit40/maven-integration-sak.git'
+            }
+        }
+        stage('compile') {
+            steps {
+                sh "mvn compile"
+            }
+        }
+        stage('test') {
+            steps {
+                sh "mvn test"
+            }
+        }
+    }
 }
