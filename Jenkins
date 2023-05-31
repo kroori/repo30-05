@@ -7,7 +7,7 @@ pipeline
     stages {
         stage('git clone') {
             steps {
-                git 'https://github.com/ajit40/maven-integration-sak.git'
+                git 'https://github.com/kroori/repo30-05.git'
             }
         }
         stage('compile') {
