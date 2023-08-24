@@ -1,0 +1,555 @@
+Installation of kubernetes
+------------------------------------------------------------------------------------------------------------------------------------------
+1)In aws select ubuntu
+
+2)Select ami as ubuntu server 22.04
+
+In instance type select t2.medium
+
+3)Provide keypair and inboundrules(all traffic)
+
+4)Launch 2 instance 1 for master and another for node and connect both into the mobextreme
+
+5)In both the nodes
+
+sudo su -
+
+vi kube.sh
+	#!/bin/bash
+# Swap memory
+swapoff -a
+# Install Docker
+sudo apt-get update
+sudo apt-get install -y\
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+# Install Kubernetes
+sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+#sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-get install -y kubelet=1.21.1-00 kubeadm=1.21.1-00 kubectl=1.21.1-00 #--allow-change-held-packages
+sudo apt-mark hold kubelet kubeadm kubectl
+	sh kube.sh
+
+kubeadm init ------------------------------This command is used to initilaze the cluster
+
+To start the cluster
+ mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+Run this commands in master node
+
+Copy and paste the following command in the worker node
+	kubeadm join 172.31.36.162:6443 --token vj056z.my7kdbxjic11baog \
+        --discovery-token-ca-cert-hash sha256:abbad0dd142e204f2f7bbd552f325dd5b32f26572534f1c116a9c2956c0e646c
+
+
+kubectl get nodes--------------------------------------This command is used to check weather the connection between master and slave is established or not
+
+
+We have to install CNI Plugin to connect the master and slave
+	kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+------------------------------------------------------------------------------------------------------------------------------------------
+
+Below are some of the sample pods
+	vi pod1.yml
+	kind: Pod
+apiVersion: v1
+metadata:
+  name: jspider
+spec:
+  containers:
+    - name: sample1
+      image: ubuntu
+      command: ["/bin/bash", "-c", "while true; do echo hello all; sleep 2 ; done"]
+  restartPolicy: Never         # Defaults to Always
+
+kubectl apply -f <file_name>-----------------------This command is used to run the script or pod
+kubectl get pods------------------------------------This command is used to get the pods details
+kubectl get pods -o wide----------------------------This command is used to get the wide information of the pods
+kubectl delete -f <file_name>-----------------------This command is used to delete the pods
+
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: devops
+spec:
+  containers:
+    - name: sample1
+      image: ubuntu
+      command: ["/bin/bash", "-c", "while true; do echo Devops; sleep 2 ; done"]
+    - name: sample2
+      image: centos
+      command: ["/bin/bash", "-c", "while true; do echo dev; sleep 2 ; done"]
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jspider
+spec:
+  containers:
+  - name: testfreshers
+    image: nginx
+    ports:
+    - containerPort: 80
+---------------------------------------------------------------------------------------------------------------------------------------
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: testfreshers
+  labels:
+    department: developer
+    batch: jddw3
+spec:
+    containers:
+       - name: demo
+         image: ubuntu
+         command: ["/bin/bash", "-c", "while true; do echo testfreshers; done"]
+
+
+
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: skillrary
+spec:
+  replicas: 2
+  selector:
+    app: nginx
+  template:
+    metadata:
+      name: abc
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: xyz
+        image: nginx
+        ports:
+        - containerPort: 80
+
+
+kind: ReplicaSet
+apiVersion: apps/v1
+metadata:
+  name: rs
+spec:
+  replicas: 2
+  selector:
+    matchExpressions:
+      - {key: myname, operator: In, values: [qspider, jspider, pyspider]}
+      - {key: env, operator: NotIn, values: [skillrary]}
+  template:
+    metadata:
+      name: sak
+      labels:
+        myname: qspider
+    spec:
+     containers:
+       - name: abc
+         image: ubuntu
+         command: ["/bin/bash", "-c", "while true; do echo Hello-world; sleep 3 ; done"]
+
+
+
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: skillrary
+spec:
+   replicas: 2
+   selector:
+    matchLabels:
+     name: deployment
+   template:
+     metadata:
+       name: qspider
+       labels:
+         name: deployment
+     spec:
+      containers:
+        - name: abc
+          image: ubuntu
+          command: ["/bin/bash", "-c", "while true; do echo skillrary; sleep 5; done"]
+
+
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: qspider
+spec:
+  containers:
+    - name: abc
+      image: ubuntu
+      command: ["/bin/bash", "-c", "while true; do echo Hello Devils; sleep 5 ; done"]
+    - name: xyz
+      image: httpd
+      ports:
+       - containerPort: 80
+
+
+
+
+
+vi pod1.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+vi pod2.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: httpd
+spec:
+  containers:
+  - name: httpd
+    image: httpd
+    ports:
+    - containerPort: 80
+New
+6:29
+vi pod1.yml
+   14  vi pod2.yml
+   15  cat pod1.yml
+   16  cat pod2.yml
+   17  clear
+   18  ls
+   19  kubectl apply -f pod1.yml
+   20  kubectl apply -f pod2.yml
+   21  kubectl get pods
+   22  kubectl get pods -o wide
+   23  curl 10.32.0.4:80
+   24  curl 10.32.0.3:80
+   25  history
+
+
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: skillrary
+spec:
+   replicas: 1
+   selector:
+    matchLabels:
+     name: deployment
+   template:
+     metadata:
+       name: vip
+       labels:
+         name: deployment
+     spec:
+      containers:
+        - name: abcd
+          image: httpd
+          ports:
+          - containerPort: 80
+
+
+
+vi service.yml
+kind: Service
+apiVersion: v1
+metadata:
+  name: demoservice
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    name: deployment
+  type: ClusterIP
+
+
+vi deploy.yml
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: jspider
+spec:
+   replicas: 1
+   selector:
+    matchLabels:
+     name: deployment
+   template:
+     metadata:
+       name: happy
+       labels:
+         name: deployment
+     spec:vi service.yml
+kind: Service
+apiVersion: v1
+metadata:
+  name: demoservice
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    name: deployment
+  type: NodePort
+      containers:
+        - name: abcd
+          image: nginx
+          ports:
+          - containerPort: 80
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------Volume concept
+
+1)Empty directory
+	apiVersion: v1
+kind: Pod
+metadata:
+  name: volume
+spec:
+  containers:
+  - name: c00
+    image: centos
+    command: ["/bin/bash", "-c", "sleep 15000"]
+    volumeMounts:
+      - name: skillrary
+        mountPath: "/tmp/qspider"
+  - name: c01
+    image: centos
+    command: ["/bin/bash", "-c", "sleep 10000"]
+    volumeMounts:
+      - name: skillrary
+        mountPath: "/tmp/jspider"
+  volumes:
+  - name: skillrary
+    emptyDir: {}
+
+History
+root@volume jspider]# history
+    1  pwd
+    2  ls
+    3  cd tmp/
+    4  ls
+    5  cd jspider/
+    6  ls
+    7  touch file1
+    8  ls
+    9  exit
+   10  ls
+   11  cd tmp/jspider/
+   12  ls
+   13  history
+[root@volume jspider]# exit
+exit
+ubuntu@ip-172-31-3-31:~$ kubectl exec volume -it -c c00 -- /bin/bash
+[root@volume /]# history
+    1  ls
+    2  cd tmp/
+    3  ls
+    4  cd qspider/
+    5  ls
+    6  ls
+    7  touch sample
+    8  exit
+    9  history
+[root@volume /]# exit
+exit
+ubuntu@ip-172-31-3-31:~$ kubectl delete -f empty.yml
+pod "volume" deleted
+ubuntu@ip-172-31-3-31:~$ history
+   10  vi empty.yml
+   11  kubectl apply -f empty.yml
+   12  kubectl get pods
+   13  kubectl exec volume -it -c c01 -- /bin/bash
+   14  kubectl exec volume -it -c c00 -- /bin/bash
+   15  kubectl exec volume -it -c c01 -- /bin/bash
+   16  kubectl exec volume -it -c c00 -- /bin/bash
+   17  kubectl delete -f empty.yml
+
+
+
+
+2)Host-Path
+
+	vi host.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  containers:
+  - image: centos
+    name: sample
+    command: ["/bin/bash", "-c", "sleep 15000"]
+    volumeMounts:
+    - mountPath: /tmp/hostpath
+      name: skillrary
+  volumes:
+  - name: skillrary
+    hostPath:
+      path: /tmp/data
+worker node :
+ls
+   11  cd tmp/
+   12  ls
+   13  cd data/
+   14  ls
+   15  echo "subbu wait" > file.txt
+   16  ls
+   17  ll
+   18  pwd
+   19  touch suubu
+   20  exit
+   21  history
+master node
+vi host.yml
+   24  clear
+   25  cat host.yml
+   26  kubectl apply -f host.yml
+   27  kubectl get pods
+   28  ls
+   30  kubectl exec demo -it -- /bin/bash
+   31  history
+
+3)NFS(network file system) or PV(persistence volume)
+	nfs instance req:
+- ubuntu
+- t2.micro
+- all traffic
+run all the commands in nfs node :
+- sudo apt update -y
+- sudo apt install nfs-kernel-server -y
+- sudo mkdir -p /mnt/sak
+- sudo chown -R nobody:nogroup /mnt/sak/
+- sudo vim /etc/exports
+- insert this content to /etc/exports → as below
+--> /mnt/sak *(rw,sync,no_subtree_check)
+  if you face any security issues then use below content
+--> /mnt/sak *(rw,sync,no_subtree_check,insecure)
+- sudo exportfs -a
+- to check exports
+--> sudo exportfs -v or showmount -e
+- sudo systemctl restart nfs-kernel-server
+Step 2 : NFS-Client (in Worker Nodes)
+- sudo apt install nfs-common -y
+- showmount -e  <nfs private IP>→
+Example : showmount -e 172.31.32.58
+vi pv.yml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-nfs-pv1
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 172.31.40.166 #nfs server private IP
+    path: "/mnt/sak"
+:wq
+vi pvc.yml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-nfs-pv1
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Mi
+:wq
+vi deploy.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: nginx
+  name: nginx-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      volumes:
+      - name: www
+        persistentVolumeClaim:
+          claimName: pvc-nfs-pv1
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+:wq
+run commands in master node :
+vi pv.yml
+    5  vi pvc.yml
+    6  vi deploy.yml
+    7  kubectl aplly -f pv.yml
+    8  kubectl apply -f pv.yml
+    9  kubectl apply -f pvc.yml
+   10  kubectl apply -f deploy.yml
+   11  kubectl get pvc
+   12  kubectl get deploy
+   13  kubectl get all
+   14  clear
+   15  kubectl get all
+   16  kubectl exec -it deployment.apps/nginx-deploy -- /bin/bash
+   17  kubectl get pods
+   18  kubectl delete pod nginx-deploy-795db8dfd6-f5wwh
+   19  kubectl get pods
+   20  kubectl get deploy
+   21  kubectl get pods
+   22  kubectl exec nginx-deploy-795db8dfd6-rtdwl -it -- /bin/bash
+   23  history
+run commands on nfs :
+ls
+    3  touch jsp.txt
+    4  ls
+    5  cd /mnt/sak
+    6  ls
+    7  cat file.txt
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
